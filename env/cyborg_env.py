@@ -1,12 +1,15 @@
 import numpy as np
 
 class CyborgInsectEnv:
-    def __init__(self, path, tangent_control_thresh=0.2, lookahead=0.3, levels=9, stim_freqs=[10, 20, 30, 40]):
+    def __init__(self, path, tangent_control_thresh=0.2, lookahead=0.3, levels=9, stim_freqs=[10, 20, 30, 40], time_step=0.1, stim_min_interval = 1.0):
         self.path = path
         self.tangent_control_thresh = tangent_control_thresh
         self.lookahead = lookahead
         self.levels = levels
         self.stim_freqs = stim_freqs
+        self.time_step = time_step
+        self.stim_min_interval = stim_min_interval
+        self.time_since_last_stim = 0.0
         self.reset()
         
     def reset(self):
@@ -32,6 +35,7 @@ class CyborgInsectEnv:
 
     def step(self, action):
         # action: (stim_direction, freq_idx)
+        self.time_since_last_stim += self.time_step
         stim_direction, freq_idx = action
         freq = self.stim_freqs[freq_idx]
         # Habituation: after 2 repeated stimuli, reduce heading effect
@@ -55,7 +59,7 @@ class CyborgInsectEnv:
         self.done = False  # Add success/failure conditions as needed
         return self._get_state(), reward, self.done
     
-    
+
 # TODO: Think about already avaialable environments 
 
     def _get_state(self):
