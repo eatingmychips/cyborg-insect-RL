@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 import random
+import matplotlib.pyplot as plt
 from collections import deque
 from env.cyborg_env import CyborgInsectEnv
 
@@ -14,7 +15,7 @@ LR = 1e-3
 MEMORY_SIZE = 10000
 TARGET_UPDATE = 50
 NUM_EPISODES = 1000
-MAX_STEPS = 300
+MAX_STEPS = 1000
 EPS_START = 1.0
 EPS_END = 0.1
 EPS_DECAY = 3000
@@ -43,7 +44,7 @@ path_int = np.round(path).astype(np.int32)
 env = CyborgInsectEnv(
     path=path_int  # Example path
 )
-n_actions = 3 * 4  # e.g., 3 directions x 4 frequencies
+n_actions = 3 * 4 + 1  # e.g., 3 directions x 4 frequencies
 state_dim = env.reset().shape[0]
 
 # -- Network definition --
@@ -98,11 +99,15 @@ def optimize_model():
     optimizer.step()
 
 def decode_action(action_idx):
-    d_idx = action_idx // 4
-    f_idx = action_idx % 4
-    # Adjust for your level encoding; for example: directions = [-4 ... 4]
-    stim_dirs = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
-    return (stim_dirs[d_idx], f_idx)
+    stim_dirs = [-1, 0, 1]
+    if action_idx < 12:
+        d_idx = action_idx // 4
+        f_idx = action_idx % 4
+        return (stim_dirs[d_idx], f_idx)
+    else:
+        return (None, None)
+
+
 
 # -- Training loop --
 steps_done = 0
@@ -113,6 +118,8 @@ for episode in range(NUM_EPISODES):
         action_idx = select_action(state, steps_done)
         action = decode_action(action_idx)
         next_state, reward, done = env.step(action)
+        if t % 100 == 0: 
+            env.render(show=False)
         memory.append((state, action_idx, reward, next_state, float(done)))
         state = next_state
         total_reward += reward
