@@ -17,11 +17,12 @@ TARGET_UPDATE = 500
 NUM_EPISODES = 12500
 MAX_STEPS = 1250
 EPS_START = 1.0
-EPS_END = 0.05
+EPS_END = 0.1
 EPS_DECAY = 6000000
 
 # -- Model Directory -- 
 model_dir = r"G:\biorobotics\data\ClosedLoopControl\RLFramework\models"
+checkpoint_path = os.path.join(model_dir, "policy_net_ep12500.pth")
 os.makedirs(model_dir, exist_ok=True)
 
 
@@ -61,7 +62,7 @@ class DQN(nn.Module):
 
 policy_net = DQN(state_dim, n_actions)
 target_net = DQN(state_dim, n_actions)
-target_net.load_state_dict(policy_net.state_dict())
+target_net.load_state_dict(torch.load(checkpoint_path))
 optimizer = optim.Adam(policy_net.parameters(), lr=LR)
 
 # -- Replay buffer --
@@ -77,11 +78,11 @@ def select_action(state, steps_done):
             return policy_net(s).max(1)[1].item()
 
 def optimize_model():
-    
     if len(memory) < BATCH_SIZE:
         return
     transitions = random.sample(memory, BATCH_SIZE)
     states, actions, rewards, next_states, dones = zip(*transitions)
+
     states = torch.tensor(np.array(states), dtype=torch.float32)
     actions = torch.tensor(np.array(actions), dtype=torch.long).unsqueeze(1)
     rewards = torch.tensor(np.array(rewards), dtype=torch.float32).unsqueeze(1)
@@ -126,7 +127,8 @@ def main():
     print("Tensor device:", x.device)
     # -- Training loop --
     steps_done = 0
-    for episode in range(NUM_EPISODES):
+    ep_start = 12500
+    for episode in range(ep_start, ep_start + NUM_EPISODES):
         state = env.reset()
         total_reward = 0
         for t in range(MAX_STEPS):
