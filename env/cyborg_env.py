@@ -159,7 +159,7 @@ class CyborgInsectEnv:
         return bin_index
 
     
-    def _get_state(self, include_history=False):
+    def _get_state(self):
         """Returns the observation vector for the agent."""
 
         # Distances
@@ -183,24 +183,12 @@ class CyborgInsectEnv:
         # Discretise heading
         disc_heading = self.discretize_heading_delta(heading_delta)
 
-        # Cooldown time (normalised)
-        time_until_next_stim = 0.0
-        if self.use_cooldown:
-            time_until_next_stim = max(0.0, self.stim_min_interval - self.time_since_last_stim)
-
         # Base observation
         state_components = [
             disc_heading,
             min_distance,
             progress_along_path,
-            (time_until_next_stim / self.stim_min_interval) if self.use_cooldown else 0.0
         ]
-
-        # Optional history features
-        if include_history:
-            last_stim_dir = self.stim_history[-1] if self.stim_history else 0
-            last_freq_idx = self.last_stim_freq if hasattr(self, "last_stim_freq") else 0
-            state_components.extend([last_stim_dir, last_freq_idx])
 
         return np.array(state_components, dtype=np.float32)
 
