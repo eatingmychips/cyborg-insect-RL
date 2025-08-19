@@ -23,24 +23,62 @@ class DemonstrationDataLoader:
     """Loads and preprocesses demonstration data from CSV files."""
     
     def __init__(self, state_columns: list, action_column: str, 
-                 normalize: bool = True, train_split: float = 0.8):
+                 normalize: bool = True, train_split: float = 0.8, 
+                 downsample: bool = False, keep_ratio: float = 0.05, 
+                 random_seed: int = 42):
         self.state_columns = state_columns
         self.action_column = action_column
         self.normalize = normalize
         self.train_split = train_split
         self.scaler = StandardScaler() if normalize else None
+        self.scalar_fitted = False
+
+        self.downsample = downsample
+        self.passive_action = 12
+        self.keep_ratio = keep_ratio
+        self.random_seed = random_seed
+
+    def _downsample_passive_actions(self, df):
+        """Apply downsampling to a single dataframe."""
+        if not self.downsample:
+            return df
+            
+        np.random.seed(self.random_seed)
         
-    def load_csv_files(self, csv_paths: list) -> Tuple[np.ndarray, np.ndarray]:
+        active_data = df[df[self.action_column] != self.passive_action]
+        passive_data = df[df[self.action_column] == self.passive_action]
+        
+        print(f"Before downsampling: {len(active_data)} active, {len(passive_data)} passive")
+        
+        # Sample passive actions
+        passive_sampled = passive_data.sample(
+            frac=self.keep_ratio, 
+            random_state=self.random_seed
+        )
+        
+        # Combine and sort
+        balanced_df = pd.concat([active_data, passive_sampled]).sort_index()
+        
+        print(f"After downsampling: {len(active_data)} active, {len(passive_sampled)} passive")
+        print(f"New active ratio: {len(active_data)/(len(active_data)+len(passive_sampled)):.1%}")
+        
+        return balanced_df
+    
+
+    def load_csv_files(self, csv_paths: list, fit_scaler: bool = True) -> Tuple[np.ndarray, np.ndarray]:
         """Load and concatenate multiple CSV files."""
         all_data = []
         for path in csv_paths:
             df = pd.read_csv(path)
+            # Apply downsampling to each file
+            if self.downsample:
+                df = self._downsample_passive_actions(df)
             all_data.append(df)
         
         combined_df = pd.concat(all_data, ignore_index=True)
-        return self._process_dataframe(combined_df)
+        return self._process_dataframe(combined_df, fit_scaler=fit_scaler)
     
-    def _process_dataframe(self, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+    def _process_dataframe(self, df: pd.DataFrame, fit_scaler: bool = True) -> Tuple[np.ndarray, np.ndarray]:
         """Extract states and actions from dataframe."""
         # Extract state features
         states = df[self.state_columns].values
@@ -50,7 +88,11 @@ class DemonstrationDataLoader:
         
         # Normalize states if requested
         if self.normalize:
-            states = self.scaler.fit_transform(states)
+            if fit_scaler and not self.scalar_fitted:
+                states = self.scaler.fit_transform(states)
+                self.scalar_fitted = True
+            else: 
+                states = self.scaler.transform(states)
         
         return states, actions
     

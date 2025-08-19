@@ -1,3 +1,5 @@
 *
 !.gitignore
-!
+!testing.py
+!policy_net.py
+!testing_BC.py

@@ -143,6 +143,6 @@ def process_all_csv_in_folder(input_folder, output_folder="formatted_data"):
     return output_files
 
 # Usage
-input_folder = r"G:\biorobotics\data\ClosedLoopControl\MiscDataCollection\500msDurationReformat"
+input_folder = r"G:\biorobotics\data\ClosedLoopControl\MiscDataCollection\CLC_1stTrial"
 output_folder = r"G:\biorobotics\data\ClosedLoopControl\MiscDataCollection\BC_Folder"
 processed_files = process_all_csv_in_folder(input_folder, output_folder)

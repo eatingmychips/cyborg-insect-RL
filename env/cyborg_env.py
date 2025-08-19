@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 
 class CyborgInsectEnv:
-    def __init__(self, path, lookahead=100, stim_freqs=[10, 20, 30, 40], time_step=0.05,
+    def __init__(self, path, lookahead=100, stim_freqs=[10, 20, 30, 40], time_step=0.02,
                  baseline_velocity = 2):
         self.path = np.array(path, dtype=np.float32)
         self.lookahead = lookahead
@@ -19,8 +19,6 @@ class CyborgInsectEnv:
         self.y_min = 0
         self.y_max = 800   # Set by your image_height
 
-        self.include_history = False     # Start simple
-        self.use_cooldown = False        # Start in penalty-only mode
         self.action_cost = 0.1           # Action penalty value
         self.stim_min_interval = 0.5     # Cooldown duration for when enabled
         self.time_since_last_stim = 0.0
@@ -29,7 +27,7 @@ class CyborgInsectEnv:
         
     def reset(self):
         self.position = np.array(self.path[0], dtype=np.float32)
-        self.heading = 0.75 # radians
+        self.heading = 0.0 # radians
         self.stim_history = []  # for habituation modeling
         self.done = False
         self.sim_time = 0.0
@@ -66,13 +64,9 @@ class CyborgInsectEnv:
         self.heading = self._angle_wrap(self.heading)
         self.position += np.array([np.cos(self.heading), np.sin(self.heading)]) * self.baseline_velocity
 
-        # Cooldown logic
-        can_stim = True
-        if self.use_cooldown:
-            can_stim = self.time_since_last_stim >= self.stim_min_interval
 
         # Apply stimulation if allowed
-        if stim_direction is not None and can_stim:
+        if stim_direction is not None:
             freq = self.stim_freqs[freq_idx]
             heading_change = np.radians(stim_direction * freq * 1.5)
             self.heading = self._angle_wrap(self.heading + heading_change)
@@ -82,15 +76,7 @@ class CyborgInsectEnv:
 
             # Track for history
             self.last_stim_freq = freq_idx
-            self.stim_history.append(stim_direction)
-            if self.use_cooldown:
-                self.time_since_last_stim = 0.0
 
-        # Update cooldown timer if used
-        if self.use_cooldown:
-            self.time_since_last_stim += self.time_step
-
-        # Apply controlled velocity (one-step burst in penalty-only mode)
         self.position += np.array([np.cos(self.heading), np.sin(self.heading)]) * self.active_controlled_velocity
         self.active_controlled_velocity = 0.0
 
@@ -99,7 +85,7 @@ class CyborgInsectEnv:
             reward -= self.action_cost
 
         # Compute state (same variables used for reward)
-        state = self._get_state(include_history=self.include_history)
+        state = self._get_state()
         # Find target point for heading delta
         target_point = self.find_target_point()
         path_index = np.argmin(np.linalg.norm(self.path - target_point, axis=1))
@@ -131,7 +117,7 @@ class CyborgInsectEnv:
         self.prev_progress = progress_along_path
 
         # Off-path handling
-        max_deviation = 200
+        max_deviation = 600
         if min_distance > max_deviation:
             self.done = True
             reward -= 250
@@ -180,12 +166,10 @@ class CyborgInsectEnv:
         angle_to_tangent = np.arctan2(tangent_vector[1], tangent_vector[0])
         heading_delta = self._angle_wrap(angle_to_tangent - self.heading)
 
-        # Discretise heading
-        disc_heading = self.discretize_heading_delta(heading_delta)
 
         # Base observation
         state_components = [
-            disc_heading,
+            heading_delta,
             min_distance,
             progress_along_path,
         ]

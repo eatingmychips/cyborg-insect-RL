@@ -30,11 +30,14 @@ def main():
             'state_columns': ['heading_error', 'path_distance', 'progress'],  # Your reduced state
             'action_column': 'action',
             'batch_size': 32,
-            'train_split': 0.8
+            'train_split': 0.8,
+            'downsample': True,
+            'keep_ratio': 0.05, 
+            'random_seed': 42
         },
         'model': {
             'state_dim': 3,  # Based on your reduced state space
-            'action_dim': 12,  # Number of discrete actions (adjust as needed)
+            'action_dim': 13,  # Number of discrete actions (adjust as needed)
             'hidden_dims': [128, 64]  # Network architecture
         },
         'training': {
@@ -54,7 +57,11 @@ def main():
         state_columns=config['data']['state_columns'],
         action_column=config['data']['action_column'],
         normalize=True,
-        train_split=config['data']['train_split']
+        train_split=config['data']['train_split'],
+        downsample=config['data']['downsample'],
+        keep_ratio=config['data']['keep_ratio'],
+        random_seed=config['data']['random_seed']
+
     )
     
     # Create dataloaders
