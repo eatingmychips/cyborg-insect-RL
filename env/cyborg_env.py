@@ -3,26 +3,18 @@ import matplotlib.pyplot as plt
 
 
 class CyborgInsectEnv:
-    def __init__(self, path, lookahead=100, stim_freqs=[10, 20, 30, 40], time_step=0.02,
-                 baseline_velocity = 2):
-        self.path = np.array(path, dtype=np.float32)
-        self.lookahead = lookahead
+    def __init__(self, stim_freqs=[10, 20, 30, 40], baseline_velocity = 0.01):
         self.stim_freqs = stim_freqs
-        self.time_step = time_step
         self.baseline_velocity = baseline_velocity       # e.g., 0.01 units per step
         self.active_controlled_velocity = 0.0
        
         self.controlled_until = 0.0
         self.total_arc_length = np.sum(np.linalg.norm(self.path[1:] - self.path[:-1], axis=1))
         self.x_min = 0
-        self.x_max = 1200  # Set by your image_length
+        self.x_max = 1  # Set by your image_length
         self.y_min = 0
-        self.y_max = 800   # Set by your image_height
+        self.y_max = 1   # Set by your image_height
 
-        self.action_cost = 0.1           # Action penalty value
-        self.stim_min_interval = 0.5     # Cooldown duration for when enabled
-        self.time_since_last_stim = 0.0
-        
         self.reset()
         
     def reset(self):
