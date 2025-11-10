@@ -15,34 +15,17 @@ LR = 1e-4
 MEMORY_SIZE = 20000
 TARGET_UPDATE = 500
 NUM_EPISODES = 12500
-MAX_STEPS = 1250
+MAX_STEPS = 500
 EPS_START = 1.0
 EPS_END = 0.05
 EPS_DECAY = 6000000
 
 # -- Model Directory -- 
-model_dir = r"G:\biorobotics\data\ClosedLoopControl\RLFramework\models"
+model_dir = r"L:\biorobotics\data\ClosedLoopControl\RLFramework\models"
 os.makedirs(model_dir, exist_ok=True)
 
-
-#Image height and lengths
-image_height = 800
-image_length = 1200
-
-# Generate parameter t for one full sine cycle
-t = np.linspace(0, 2 * np.pi, 1000)
-
-# x runs from 50 to image_length - 50
-x = 100 + (image_length - 150) * t / (2 * np.pi)
-
-# y is a sine wave with amplitude image_height
-y = 400 + (image_height/2 - 100) * np.sin(t)
-path = np.column_stack((x, y))
-path_int = np.round(path).astype(np.int32)
-
-
 env = CyborgInsectEnv(
-    path=path_int  # Example path
+    
 )
 n_actions = 3 * 4 + 1  # e.g., 3 directions x 4 frequencies
 state_dim = env.reset().shape[0]
@@ -77,7 +60,6 @@ def select_action(state, steps_done):
             return policy_net(s).max(1)[1].item()
 
 def optimize_model():
-    
     if len(memory) < BATCH_SIZE:
         return
     transitions = random.sample(memory, BATCH_SIZE)
@@ -107,7 +89,7 @@ def decode_action(action_idx):
     else:
         return (None, None)
 
-
+print('Running Script')
 def main():
     # Check if CUDA (GPU support) is available
     print("CUDA Available:", torch.cuda.is_available())
@@ -133,8 +115,8 @@ def main():
             action_idx = select_action(state, steps_done)
             action = decode_action(action_idx)
             next_state, reward, done = env.step(action)
-            # if t % 50 == 0: 
-            #     env.render(show=False)
+            # if t % 250 == 0: 
+            #     env.render(show=True)
             memory.append((state, action_idx, reward, next_state, float(done)))
             state = next_state
             total_reward += reward
@@ -143,6 +125,8 @@ def main():
             if steps_done % TARGET_UPDATE == 0:  
                 target_net.load_state_dict(policy_net.state_dict())
             if done:
+                # env.render(show=True)
+                print('Done')
                 break
         print(f"Episode {episode+1}: Total reward = {total_reward:.2f}")
         # Optionally save model every N episodes

@@ -1,5 +1,5 @@
 {
     "terminal.integrated.env.windows": {
-    "PYTHONPATH": "G:\\biorobotics\\data\\ClosedLoopControl\\RLFramework"
+    "PYTHONPATH": "L:\\biorobotics\\data\\ClosedLoopControl\\RLFramework"
     }
 }
