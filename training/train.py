@@ -27,7 +27,7 @@ os.makedirs(model_dir, exist_ok=True)
 env = CyborgInsectEnv(
     
 )
-n_actions = 3 * 4 + 1  # e.g., 3 directions x 4 frequencies
+n_actions = 2*4 + 2*1 + 1  # e.g., 11 actions
 state_dim = env.reset().shape[0]
 
 # -- Network definition --
@@ -81,13 +81,22 @@ def optimize_model():
     optimizer.step()
 
 def decode_action(action_idx):
-    stim_dirs = [-1, 0, 1]
-    if action_idx < 12:
-        d_idx = action_idx // 4
-        f_idx = action_idx % 4
-        return (stim_dirs[d_idx], f_idx)
-    else:
+    if 0 <= action_idx <= 3:
+        direction = -1
+        frequency = action_idx  # 0, 1, 2, 3
+        return (direction, frequency)
+    elif 4 <= action_idx <= 7:
+        direction = 1
+        frequency = action_idx - 4  # 0, 1, 2, 3
+        return (direction, frequency)
+    elif 8 <= action_idx <= 9:
+        direction = 0
+        frequency = action_idx - 8  # 0, 1
+        return (direction, frequency)
+    elif action_idx == 10:
         return (None, None)
+    else:
+        raise ValueError(f"Invalid action index: {action_idx}")
 
 print('Running Script')
 def main():
@@ -136,7 +145,7 @@ def main():
     print("Training finished.")
 
     # Save final model
-    torch.save(policy_net.state_dict(), r"G:\biorobotics\data\ClosedLoopControl\RLFramework\models\policy_net_final.pth")
+    torch.save(policy_net.state_dict(), r"L:\biorobotics\data\ClosedLoopControl\RLFramework\models\policy_net_final.pth")
 
 if __name__ == "__main__": 
     main()

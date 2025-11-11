@@ -13,11 +13,11 @@ env = CyborgInsectEnv(
 )
 # Load the trained model
 input_dim = env.reset().shape[0]    # or explicitly e.g. 6
-n_actions = 13                      # as defined before
+n_actions = 11                 
 
 policy_net = DQN(input_dim, n_actions)
 
-policy_net.load_state_dict(torch.load('models\policy_net_ep2100.pth'))
+policy_net.load_state_dict(torch.load('models\policy_net_final.pth'))
 policy_net.eval()
 
 
@@ -40,17 +40,20 @@ while not done:
         action_idx = policy_net(s).max(1)[1].item()
     
     action = decode_action(action_idx)
+
+
     state, reward, done = env.step(action)
-    print('Action is', action)
+
+    print(action)
     positions.append(env.position.copy())
     rewards.append(reward)
-
+    
     # Live plot: animate
     if i % 1 == 0:
-        env.render(show=False)  # update the figure without blocking
+        env.render(show=True)  # update the figure without blocking
 
-    print('Iteration', i)
-print(reward)
+
+print('Time Steps', i)
 plt.ioff()  # Turn off interactive mode
 
 # --- Final static plot of run ---

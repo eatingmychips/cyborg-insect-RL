@@ -8,28 +8,28 @@ STEP_PENALTY = 0.1
 
 
 class CyborgInsectEnv:
-    def __init__(self, stim_freqs=[10, 20, 30, 40], target_point = np.array([0.9, 0.5]), obstacles = None):
+    def __init__(self, stim_freqs=[10, 20, 30, 40], target_point = np.array([90, 50]), obstacles = None):
         self.stim_freqs = stim_freqs
         self.target_point = target_point
         self.obstacles = obstacles
 
         # OU Dispersion for heading
-        self.ou_theta = 0.2    # speed of mean reversion
+        self.ou_theta = 0.3  # speed of mean reversion
         self.ou_mu = 0         # desired mean (0 rad)
-        self.ou_sigma = np.deg2rad(2)  # volatility (typical drift in rad)
+        self.ou_sigma = np.deg2rad(3)  # volatility (typical drift in rad)
         self.ou_drift = 0      # running drift
         
         # OU Dispersion for velocity 
-        self.ou_theta_v = 0.5
-        self.ou_mu = 0.005
-        self.ou_sigma_v = 0.001
-        self.velocity = 0.005
+        self.ou_theta_v = 1
+        self.ou_mu_v = 0.5
+        self.ou_sigma_v = 0.1
+        self.velocity = 0.5
 
 
-        self.x_min = -1
-        self.x_max = 1
+        self.x_min = -100
+        self.x_max = 100
         self.y_min = 0
-        self.y_max = 1
+        self.y_max = 100
 
         self.heading = 0
         self.step_no = 0
@@ -37,7 +37,7 @@ class CyborgInsectEnv:
         self.position = np.array([0, 0])
         self.done = False
         self.progress = 0
-        self.action_cost = 10
+        self.action_cost = 5
         self.heading_drift_list = np.deg2rad([-2, -1, 0, 0, 1, 2])
         self.state = self._get_state()
         self.reset()
@@ -76,37 +76,36 @@ class CyborgInsectEnv:
 
         self.ou_drift += self.ou_theta * (self.ou_mu - self.ou_drift) + self.ou_sigma * np.random.normal()
         
-        self.velocity += self.ou_theta_v *(self.ou_mu - self.velocity) + self.ou_sigma_v * np.random.normal()
+        self.velocity += self.ou_theta_v *(self.ou_mu_v - self.velocity) + self.ou_sigma_v * np.random.normal()
         
         self.heading = self._angle_wrap(self.heading + self.ou_drift)
-
-        self.position += np.array([np.cos(self.heading), np.sin(self.heading)]) * self.velocity
 
         if stim_direction is not None:
             freq = self.stim_freqs[freq_idx]
             heading_change = np.radians(stim_direction * freq * 1.5)
             self.heading = self._angle_wrap(self.heading + heading_change)
-            if stim_direction == 0: 
-                self.position += freq/10 * np.array([np.cos(self.heading), np.sin(self.heading)]) * ()
-                reward -= 5*self.action_cost
-
             reward -= self.action_cost
+            if stim_direction == 0: 
+                boost = 2 / (1 + 10 * self.velocity) * (freq_idx + 1) * 1.5
+                self.velocity += boost
+                reward -= 2.5 * self.action_cost
 
+        self.position += np.array([np.cos(self.heading), np.sin(self.heading)]) * self.velocity
         prev_progress = self.state[1]
 
+
         # Compute state (same variables used for reward)
-        state = self._get_state()
+        self.state = self._get_state()
+        
+        angle_diff = self.state[0]
+        progress = self.state[1]
 
-        angle_diff = state[0]
-        progress = state[1]
-
-        reward = prev_progress - progress - angle_diff * 0.1 - 0.01
-
-        if progress <= 0.1: 
+        reward += (prev_progress - progress - angle_diff * 0.5)
+        if progress <= 10: 
             self.done = True 
-            reward += 100
+            reward += 500
 
-        return state, reward, self.done
+        return self.state, reward, self.done
 
     
     def _get_state(self):
@@ -141,19 +140,19 @@ class CyborgInsectEnv:
     
 
         # Add an arrow for heading
-        arrow_length = 0.05 # Set arrow length as desired (adjust if units are small/large)
+        arrow_length = 5 # Set arrow length as desired (adjust if units are small/large)
         dx = arrow_length * np.cos(self.heading)
         dy = arrow_length * np.sin(self.heading)
         plt.arrow(self.position[0], self.position[1], dx, dy,
                 head_width=arrow_length*0.3, head_length=arrow_length*0.3,
-                fc=agent_color, ec=agent_color, linewidth=0.5, label='Heading')
+                fc=agent_color, ec=agent_color, linewidth=2, label='Heading')
 
         
         plt.legend(loc="best")
         plt.xlabel("X")
         plt.ylabel("Y")
-        plt.xlim(-0.5, 1)
-        plt.ylim(0, 1)
+        plt.xlim(-100, 100)
+        plt.ylim(-100, 100)
         plt.title("Cyborg Insect Environment")
         plt.pause(0.01)
         if show:
