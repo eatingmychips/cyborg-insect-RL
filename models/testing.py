@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-
+import time 
 # --- Load your environment and network ---
 from env.cyborg_env import CyborgInsectEnv   # Update with your actual import
 from training.train import *
@@ -31,6 +31,7 @@ done = False
 
 plt.ion()  # Interactive plotting on
 i = 0
+sum = 0 
 # --- Main Greedy Policy Rollout ---
 while not done:
     i += 1
@@ -40,18 +41,20 @@ while not done:
         action_idx = policy_net(s).max(1)[1].item()
     
     action = decode_action(action_idx)
-
+    
 
     state, reward, done = env.step(action)
 
-    print(action)
+    if action[0] == -1 or 1:  
+        sum += 1
     positions.append(env.position.copy())
     rewards.append(reward)
     
     # Live plot: animate
-    if i % 1 == 0:
+    if i % 5 == 0:
+        time.sleep(0.1)
         env.render(show=True)  # update the figure without blocking
-
+print('Number of Stimulations', sum)
 
 print('Time Steps', i)
 plt.ioff()  # Turn off interactive mode

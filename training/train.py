@@ -15,10 +15,10 @@ LR = 1e-4
 MEMORY_SIZE = 20000
 TARGET_UPDATE = 500
 NUM_EPISODES = 12500
-MAX_STEPS = 500
+MAX_STEPS = 250
 EPS_START = 1.0
 EPS_END = 0.05
-EPS_DECAY = 6000000
+EPS_DECAY = 3125000
 
 # -- Model Directory -- 
 model_dir = r"L:\biorobotics\data\ClosedLoopControl\RLFramework\models"

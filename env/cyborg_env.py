@@ -8,9 +8,8 @@ STEP_PENALTY = 0.1
 
 
 class CyborgInsectEnv:
-    def __init__(self, stim_freqs=[10, 20, 30, 40], target_point = np.array([90, 50]), obstacles = None):
+    def __init__(self, stim_freqs=[10, 20, 30, 40], obstacles = None):
         self.stim_freqs = stim_freqs
-        self.target_point = target_point
         self.obstacles = obstacles
 
         # OU Dispersion for heading
@@ -24,13 +23,14 @@ class CyborgInsectEnv:
         self.ou_mu_v = 0.5
         self.ou_sigma_v = 0.1
         self.velocity = 0.5
-
+        
 
         self.x_min = -100
         self.x_max = 100
-        self.y_min = 0
+        self.y_min = 25
         self.y_max = 100
-
+        
+        self.target = self._sample_random_target()
         self.heading = 0
         self.step_no = 0
         self.max_steps = 500
@@ -88,7 +88,7 @@ class CyborgInsectEnv:
             if stim_direction == 0: 
                 boost = 2 / (1 + 10 * self.velocity) * (freq_idx + 1) * 1.5
                 self.velocity += boost
-                reward -= 2.5 * self.action_cost
+                reward -= 2 * self.action_cost
 
         self.position += np.array([np.cos(self.heading), np.sin(self.heading)]) * self.velocity
         prev_progress = self.state[1]
@@ -110,9 +110,9 @@ class CyborgInsectEnv:
     
     def _get_state(self):
         """Returns the observation vector for the agent."""
-        goal_dist = np.linalg.norm(self.target_point - self.position)
+        goal_dist = np.linalg.norm(self.target - self.position)
         
-        direction = np.array(self.target_point) - np.array(self.position)
+        direction = np.array(self.target) - np.array(self.position)
         angle_to_tangent = np.arctan2(direction[1], direction[0])
         angle_diff = angle_to_tangent - self.heading
         angle_diff = (angle_diff + np.pi) % (2 * np.pi) - np.pi
@@ -135,7 +135,7 @@ class CyborgInsectEnv:
         plt.scatter(self.position[0], self.position[1], color=agent_color, label='Agent')
     
         # Plot target point
-        target_point = self.target_point
+        target_point = self.target
         plt.scatter(target_point[0], target_point[1], color=target_color, label='Target', marker='x')
     
 
